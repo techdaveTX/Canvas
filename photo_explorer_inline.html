@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo Editing Terminology Explorer</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f9f9f9; color: #222; }
+</style>
+</head>
+<body>
+<div id="app" style="max-width:900px;margin:0 auto;padding:24px 16px 40px;font-family:'Segoe UI',Arial,sans-serif;color:#222;background:#f9f9f9;min-height:100vh;">
+
+  <!-- NAV -->
+  <div id="nav" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;"></div>
+
+  <!-- SECTIONS -->
+  <div id="sec-terms"></div>
+  <div id="sec-compare" style="display:none"></div>
+  <div id="sec-scenarios" style="display:none"></div>
+  <div id="sec-quiz" style="display:none"></div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────
+const TERMS = [
+  { name:"Exposure", app:"both", cat:"Brightness", short:"Controls how bright or dark the whole photo looks.", detail:"The exposure slider makes the entire image lighter or darker. If a photo looks too dark, pull the slider up. Too bright and washed out? Pull it down. It's usually the first thing an editor adjusts.", analogy:"Like a dimmer switch for your whole photo.", q:"If you took a photo in a dark room and it came out way too dark, which direction would you move the exposure slider?" },
+  { name:"Histogram", app:"both", cat:"Brightness", short:"A graph that shows how much light and dark is in your photo.", detail:"The left side shows the dark parts of the photo, the right side shows the bright parts. If the graph is bunched up on the left, the photo is too dark. If it's all pushed to the right, it may be too bright and losing detail.", analogy:"Like a crowd of people on a football field — where most of them are standing tells you where most of the brightness is in your photo.", q:"What would a histogram look like for a photo taken in a white snowstorm — mostly on the left or the right?" },
+  { name:"White balance", app:"both", cat:"Color", short:"Makes the colors look natural instead of too orange or too blue.", detail:"Different light sources give off different color tones — candles make everything look orange, cloudy skies make things look blue. White balance corrects this so that something actually white in real life looks white in the photo.", analogy:"Like switching between different colored phone filters. White balance undoes that unwanted filter.", q:"A photo taken indoors under regular lights looks very orange. Would you adjust white balance warmer or cooler to fix it?" },
+  { name:"Saturation", app:"both", cat:"Color", short:"Controls how bold and vivid the colors look.", detail:"Turning saturation up makes all the colors really pop and look intense. Turning it down makes colors look dull and faded. If you go all the way to zero, the photo turns black and white.", analogy:"Like turning the color dial on an old TV — all the way up is super vivid, all the way down is grayscale.", q:"If someone wanted their travel photo to look like a vintage, faded postcard, would they turn saturation up or down?" },
+  { name:"Vibrance", app:"lr", cat:"Color", short:"Like saturation, but smarter — boosts dull colors without making skin tones look orange.", detail:"Regular saturation boosts all colors equally, which can make skin tones look strange. Vibrance is designed to be more careful — it boosts colors that are already dull, and barely touches colors that are already bright.", analogy:"Like a music equalizer that turns up the quiet instruments in a song but leaves the already-loud ones alone.", q:"A photographer is editing a beach portrait. Why might they use Vibrance instead of Saturation?" },
+  { name:"Contrast", app:"both", cat:"Brightness", short:"The difference between the lightest and darkest parts of a photo.", detail:"High contrast means the bright parts are very bright and the dark parts are very dark — it looks bold and dramatic. Low contrast means everything blends together into a flat, washed-out look.", analogy:"Like the difference between a pencil sketch (low contrast) and a pen drawing with thick dark lines (high contrast).", q:"A product photographer wants packaging to look crisp and dramatic. Should they increase or decrease contrast?" },
+  { name:"Highlights", app:"both", cat:"Brightness", short:"Controls the brightness of just the lightest parts of a photo.", detail:"This slider only targets the brightest areas — like a sky, a window, or anything that's almost white. Pulling highlights down is a common trick to bring back detail in bright areas that look totally washed out.", analogy:"Like only turning down the volume on the loudest sounds in a song, while everything else stays the same.", q:"A sunset photo has a beautiful sky but it looks completely white and washed out. What slider would you try first?" },
+  { name:"Shadows", app:"both", cat:"Brightness", short:"Controls the brightness of just the darkest parts of a photo.", detail:"This slider only targets the darkest areas of the photo. Pulling shadows up reveals detail hiding in dark spots — like a face in the shade or details inside a dark room.", analogy:"Like shining a flashlight into a dark corner without turning on every light in the room.", q:"You photographed someone standing in front of a bright window. Their face is very dark. Which slider helps?" },
+  { name:"Clarity", app:"lr", cat:"Brightness", short:"Makes textures and edges look sharper and more defined.", detail:"Clarity increases the contrast between edges, which makes things like skin texture, tree bark, or fabric look crisp and detailed. Too high gives a gritty look. Negative values give a dreamy, soft look — often used for portraits.", analogy:"Like adjusting the focus on a projector — too sharp looks harsh, too soft is blurry.", q:"A photographer wants a portrait to look soft and dreamy. Would they use positive or negative Clarity?" },
+  { name:"Sharpening", app:"both", cat:"Detail", short:"Makes the edges in a photo look crisper.", detail:"Sharpening makes the edges between different areas look more defined and in-focus. It works at the level of individual pixels. Too much sharpening makes a photo look harsh and unnatural.", analogy:"Like adjusting the focus ring on a camera — sharpening tries to recover some crispness after the photo is taken.", q:"Would you apply the same amount of sharpening to a close-up portrait as to a landscape? Why or why not?" },
+  { name:"Noise reduction", app:"both", cat:"Detail", short:"Reduces the grainy, speckled look in dark or low-light photos.", detail:"When you take a photo in a dark place, your camera boosts its sensitivity to capture any light at all. As a side effect, you get a grainy, speckly texture — that's called noise. Noise reduction smooths it out, but too much can make skin look plasticky.", analogy:"Like noise-canceling headphones — they remove the background static, but you still want to hear the actual music.", q:"A photo taken at a concert is full of colored speckles. What adjustment would you use?" },
+  { name:"Crop & straighten", app:"both", cat:"Framing", short:"Trim the edges of a photo or fix a tilted horizon line.", detail:"Cropping removes parts of the image you don't want in the frame. Straightening rotates the photo slightly so that the horizon or a wall is perfectly level. Both are about improving what's in the frame.", analogy:"Like choosing what to include in a window frame — you decide what the viewer sees and what gets cut off.", q:"The rule of thirds says your subject should be off-center. How could cropping help apply this rule after a photo is already taken?" },
+  { name:"Layers", app:"ps", cat:"Compositing", short:"Stacked, see-through sheets that each hold a different part of the image.", detail:"In Photoshop, you can stack multiple images, adjustments, or text on top of each other — each on its own layer. You can edit one layer without changing the others. This is how editors combine multiple photos into one image.", analogy:"Like stacking clear plastic sheets on an overhead projector — each sheet adds something, and you can remove any sheet without changing the others.", q:"If you wanted to add a sunset sky behind a silhouette of a person, how would using layers help?" },
+  { name:"Masking", app:"ps", cat:"Compositing", short:"Hides or reveals specific parts of a layer — like a stencil.", detail:"A mask is a black-and-white map that controls which parts of a layer show up. Black areas are hidden, white areas are visible. This is how editors cut out a subject from the background or blend two photos together smoothly.", analogy:"Like using painter's tape before you paint a room — the tape protects what you don't want paint on.", q:"You want to make someone's jacket red but keep everything else in the photo unchanged. How would a mask help?" },
+  { name:"Selection tools", app:"ps", cat:"Compositing", short:"Let you outline a specific area so edits only apply there.", detail:"Tools like the Lasso, Magic Wand, and Quick Selection let you draw around or mark a specific region. Once you have a selection, any changes you make only affect that area — not the whole photo.", analogy:"Like cutting something out of a magazine — you only change what's inside the lines you cut.", q:"Why would a graphic designer need to select just the sky in a photo and nothing else?" },
+  { name:"Clone stamp", app:"ps", cat:"Retouching", short:"Copies pixels from one part of the image and paints them over another part.", detail:"You pick a clean area of the photo to copy, then paint over the part you want to remove or fix. It's used to get rid of blemishes, power lines, tourists in the background — anything you want to erase.", analogy:"Like using a texture roller to copy one section of wallpaper over a stain on the wall.", q:"A real estate photographer wants to remove a trash can from the driveway. What tool would they use?" },
+  { name:"Healing brush", app:"ps", cat:"Retouching", short:"Like the clone stamp, but it automatically blends the repair into the surrounding area.", detail:"The healing brush samples the texture from a nearby area and blends it in so the repair is nearly invisible. It's smarter than the clone stamp because it matches the color and lighting of the area you're fixing.", analogy:"Like a patch kit that automatically color-matches itself to your jacket so you can't tell it was ever patched.", q:"What's one situation where you'd use the Healing Brush instead of the Clone Stamp?" },
+  { name:"Curves", app:"both", cat:"Brightness", short:"A more precise way to control brightness in different areas of a photo.", detail:"The Curves tool shows a diagonal line. You can pull different parts of that line up or down to brighten or darken specific areas. For example, you could make the bright areas brighter while making the dark areas even darker — all in one move.", analogy:"Like an equalizer for brightness — you can boost the dark areas without touching the bright areas, or vice versa.", q:"How is Curves different from just dragging the Exposure slider?" },
+  { name:"HSL panel", app:"lr", cat:"Color", short:"Lets you change just one specific color without affecting all the others.", detail:"HSL stands for Hue, Saturation, and Lightness. In Lightroom, you can target a single color — like just the blues — and make it more vivid, lighter, or shift it to a different shade. Everything else stays the same.", analogy:"Like having a separate volume knob for each instrument in a band — you can turn down just the drums without affecting the guitar.", q:"A travel photo has great buildings but the sky looks pale gray. Which panel in Lightroom would you use to make only the sky more blue?" },
+  { name:"Export / save for web", app:"both", cat:"Output", short:"Saving the finished photo in the right format and quality for where it's going.", detail:"When you're done editing, you need to export the photo. The settings you choose (file type, quality, size) depend on where the photo is going. A photo for Instagram doesn't need to be as large as one being sent to a print shop.", analogy:"Like choosing the right envelope and stamp depending on where you're mailing a letter.", q:"A student wants to post a photo on Instagram and also print it as a large poster. Would they use the same export settings for both? Why or why not?" },
+];
+
+const SCENARIOS = [
+  { title:"School sports photo — too dark, grainy", body:"You photographed a basketball game. The gym was dark so the camera had to boost its sensitivity, leaving a grainy, speckled image. The main player is sharp but the crowd is blurry. The image is too dark and has a yellowish tint from the gym lights.", tools:["Exposure (up)", "Noise reduction", "White balance (cooler)", "Shadows (up)", "Sharpening"] },
+  { title:"Outdoor portrait — great face, washed-out sky", body:"A friend's headshot looks perfect except the sky behind them is pure white — all detail is gone. The face is slightly too warm and orange-tinted. You want to keep the portrait looking natural and professional.", tools:["Highlights (down)", "White balance (cooler)", "Clarity (slightly negative for soft skin)", "Crop & straighten"] },
+  { title:"Product photo — remove background for website", body:"You photographed a pair of sneakers on a table with a messy background. The e-commerce website needs a plain white background. The shoe itself looks good but the colors are a bit dull.", tools:["Selection tools (outline the shoe)", "Masking (cut out background)", "Saturation / Vibrance (up)", "Layers (add white background)", "Contrast (up)"] },
+  { title:"Old family photo — scratched and faded", body:"You scanned a printed photo from the 1970s. It's washed out, has a strong yellow/orange tint from age, and has several scratches and dust marks. You want to restore it to look as close to original as possible.", tools:["Curves (restore contrast)", "White balance (reduce yellow)", "Clone stamp / Healing brush (remove scratches)", "Saturation (carefully up)", "Sharpening (subtle)"] },
+];
+
+const QUIZ = [
+  { q:"Which slider would you use to recover detail in a sky that looks completely white?", opts:["Shadows","Highlights","Exposure","Contrast"], ans:1, explain:"Highlights only targets the brightest areas. Pulling it down brings back detail in areas that are nearly all white." },
+  { q:"What is the main difference between Lightroom and Photoshop?", opts:["Lightroom is free; Photoshop costs money","Lightroom adjusts the whole photo without permanently changing it; Photoshop lets you edit specific parts and combine images","Photoshop is for video; Lightroom is for photos","Lightroom only works with JPEG files"], ans:1, explain:"Lightroom is for overall adjustments to lots of photos. Photoshop does detailed, specific edits and lets you combine multiple images." },
+  { q:"A photo taken under yellow indoor lights looks very orange. What adjustment fixes this?", opts:["Contrast","Clarity","White balance","Noise reduction"], ans:2, explain:"White balance corrects the unwanted color tint caused by different light sources." },
+  { q:"In Photoshop, what does a black area on a layer mask do?", opts:["Makes that area fully visible","Makes that area completely hidden","Sharpens that area","Adds grain to that area"], ans:1, explain:"On a mask, black = hidden and white = visible. It's how you selectively show or hide parts of a layer." },
+  { q:"What is 'noise' in photography?", opts:["Loud sounds during the shoot","Grainy, speckled texture from shooting in a dark place","Blurring from a moving camera","Washed-out bright areas"], ans:1, explain:"Noise (or grain) appears when a camera is pushed hard in low-light conditions. It looks like colored or gray speckles all over the image." },
+  { q:"Vibrance is different from Saturation because it:", opts:["Only works on black and white photos","Boosts dull colors while being careful not to make skin tones look too orange","Adjusts brightness instead of color","Only works in Photoshop"], ans:1, explain:"Vibrance is smarter than Saturation — it targets the colors that are already dull and avoids going overboard on colors that are already vivid." },
+  { q:"What does the Clarity slider mainly do?", opts:["Makes the whole photo brighter","Changes the color temperature","Makes textures and edges look sharper and more defined","Changes the file size when you export"], ans:2, explain:"Clarity adds edge definition — it makes textures pop. Pulling it negative creates a soft, dreamy effect often used in portraits." },
+  { q:"A photographer wants to remove a telephone pole from the background of a photo. Which Photoshop tool is best?", opts:["Curves","Clone Stamp or Healing Brush","Layers","White Balance"], ans:1, explain:"The Clone Stamp or Healing Brush let you paint over an unwanted object by copying the surrounding area to fill it in." },
+  { q:"What does a histogram show you about a photo?", opts:["How sharp the photo is","The location where the photo was taken","How much of the photo is dark, medium-toned, or bright","How many colors are in the file"], ans:2, explain:"A histogram is a graph of brightness. Left = dark areas, right = bright areas. It helps you judge if a photo is too dark or too bright." },
+  { q:"Which app would a photographer most likely use to quickly fix the color on 200 photos from a school event?", opts:["Photoshop","Lightroom","Both work exactly the same way","Neither — you need a different app"], ans:1, explain:"Lightroom is built for editing large batches of photos quickly. You can apply the same adjustments to hundreds of photos at once." },
+];
+
+// ── STYLES (inline-safe) ──────────────────────────────
+const S = {
+  navBtn: (active) => `padding:7px 18px;border-radius:20px;border:1px solid ${active?'#1a1a1a':'#bbb'};background:${active?'#1a1a1a':'#fff'};color:${active?'#fff':'#555'};font-size:13px;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif;font-weight:${active?'500':'400'};`,
+  eyebrow: `font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:6px;font-weight:600;`,
+  title: `font-size:22px;font-weight:600;margin-bottom:4px;color:#111;`,
+  desc: `font-size:14px;color:#666;line-height:1.6;margin-bottom:20px;`,
+  filterBtn: (on) => `padding:4px 13px;border-radius:16px;border:1px solid ${on?'#1a1a1a':'#ccc'};background:${on?'#1a1a1a':'transparent'};font-size:12px;cursor:pointer;color:${on?'#fff':'#666'};font-family:'Segoe UI',Arial,sans-serif;margin-bottom:6px;`,
+  card: (expanded) => `background:#fff;border:1px solid ${expanded?'#999':'#e0e0e0'};border-radius:12px;padding:14px 16px;cursor:pointer;margin-bottom:8px;`,
+  termHeader: `display:flex;justify-content:space-between;align-items:flex-start;`,
+  termName: `font-size:15px;font-weight:600;color:#111;flex:1;`,
+  appBadge: (app) => {
+    const cfg = {lr:{bg:'#1D3557',c:'#A8D8EA',t:'Lightroom'},ps:{bg:'#2B1D6B',c:'#C9B8F0',t:'Photoshop'},both:{bg:'#1A3D2B',c:'#8FD4A8',t:'Both'}};
+    const x = cfg[app];
+    return `font-size:11px;padding:2px 9px;border-radius:10px;font-weight:600;white-space:nowrap;margin-left:8px;background:${x.bg};color:${x.c};flex-shrink:0;`;
+  },
+  termShort: `font-size:13px;color:#666;margin-top:6px;line-height:1.5;`,
+  termDetail: `margin-top:10px;border-top:1px solid #eee;padding-top:10px;`,
+  detailP: `font-size:13px;line-height:1.65;color:#555;margin-bottom:6px;`,
+  analogy: `font-size:13px;line-height:1.5;color:#888;font-style:italic;margin-bottom:8px;`,
+  thinkQ: `font-size:13px;font-weight:600;color:#111;padding:9px 13px;background:#f5f5f5;border-radius:8px;border-left:3px solid #bbb;line-height:1.5;`,
+  expandIcon: `font-size:18px;color:#aaa;line-height:1;flex-shrink:0;margin-left:6px;font-weight:300;`,
+  appCard: `background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:16px 20px;`,
+  appCardTitle: (color) => `font-size:16px;font-weight:600;margin-bottom:4px;color:${color};`,
+  appCardSub: `font-size:13px;color:#666;margin-bottom:14px;line-height:1.5;`,
+  featureRow: `display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:13px;line-height:1.4;color:#333;`,
+  dot: (color) => `width:7px;height:7px;border-radius:50%;background:${color};flex-shrink:0;margin-top:4px;`,
+  scenarioCard: `background:#f5f5f5;border-radius:12px;padding:18px;margin-bottom:12px;`,
+  scenarioTitle: `font-size:14px;font-weight:600;margin-bottom:6px;color:#222;`,
+  scenarioBody: `font-size:13px;color:#555;line-height:1.6;margin-bottom:12px;`,
+  toolPill: `font-size:12px;padding:3px 11px;border-radius:10px;background:#fff;border:1px solid #ccc;color:#555;display:inline-block;margin:3px 4px 3px 0;`,
+  quizCard: `background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:20px 22px;margin-bottom:14px;`,
+  quizQ: `font-size:15px;font-weight:600;margin-bottom:14px;line-height:1.5;color:#111;`,
+  quizOpt: (state) => {
+    const bg = state==='correct'?'#d4f5e2':state==='wrong'?'#fde8e8':'#f5f5f5';
+    const bc = state==='correct'?'#27ae60':state==='wrong'?'#e74c3c':'#ccc';
+    const c  = state==='correct'?'#1a6e3a':state==='wrong'?'#922':'#333';
+    return `padding:10px 14px;border-radius:8px;border:1px solid ${bc};background:${bg};cursor:pointer;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;text-align:left;color:${c};width:100%;margin-bottom:8px;display:block;`;
+  },
+  feedback: (ok) => `font-size:13px;margin-top:10px;padding:9px 13px;border-radius:8px;line-height:1.5;background:${ok?'#d4f5e2':'#fde8e8'};color:${ok?'#1a6e3a':'#922'};`,
+  nextBtn: `margin-top:12px;padding:8px 20px;border-radius:8px;border:1px solid #bbb;background:#fff;cursor:pointer;font-size:14px;font-family:'Segoe UI',Arial,sans-serif;color:#333;`,
+  scorePill: `background:#f0f0f0;border-radius:20px;padding:4px 16px;font-size:13px;border:1px solid #ddd;display:inline-block;margin-right:10px;`,
+  sectionBanner: (bg, light) => `background:${bg};border-radius:10px;padding:14px 20px;margin-bottom:18px;`,
+  instrBox: `border-left:4px solid #3A7BD5;background:#EBF4FD;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:18px;font-size:13px;color:#1D3557;font-style:italic;line-height:1.5;`,
+};
+
+// ── STATE ─────────────────────────────────────────────
+let activeTab = 'terms';
+let activeFilter = 'All';
+let expandedTerm = null;
+let quizIndex = 0;
+let quizScore = 0;
+let quizAnswered = false;
+const filterCats = ['All','Brightness','Color','Detail','Framing','Compositing','Retouching','Output'];
+
+// ── RENDER HELPERS ────────────────────────────────────
+function appBadgeText(app) {
+  return {lr:'Lightroom',ps:'Photoshop',both:'Both'}[app];
+}
+
+function renderNav() {
+  const nav = document.getElementById('nav');
+  const tabs = [['terms','Term explorer'],['compare','Lightroom vs Photoshop'],['scenarios','Real-world scenarios'],['quiz','Quiz yourself']];
+  nav.innerHTML = tabs.map(([id,label]) =>
+    `<button style="${S.navBtn(activeTab===id)}" onclick="switchTab('${id}')">${label}</button>`
+  ).join('');
+}
+
+function renderTerms() {
+  const sec = document.getElementById('sec-terms');
+  const filtered = TERMS.filter(t => activeFilter === 'All' || t.cat === activeFilter);
+
+  const filterHtml = filterCats.map(c =>
+    `<button style="${S.filterBtn(activeFilter===c)}" onclick="setFilter('${c}')">${c}</button>`
+  ).join(' ');
+
+  const cardsHtml = filtered.map(t => {
+    const isExp = expandedTerm === t.name;
+    const detailHtml = isExp ? `<div style="${S.termDetail}">
+      <p style="${S.detailP}">${t.detail}</p>
+      <p style="${S.analogy}">Think of it like: ${t.analogy}</p>
+      <div style="${S.thinkQ}">Think about it: ${t.q}</div>
+    </div>` : '';
+    return `<div style="${S.card(isExp)}" onclick="toggleTerm('${t.name.replace(/'/g,"\\'")}')">
+      <div style="${S.termHeader}">
+        <span style="${S.termName}">${t.name}</span>
+        <span style="${S.appBadge(t.app)}">${appBadgeText(t.app)}</span>
+        <span style="${S.expandIcon}">${isExp?'−':'+'}</span>
+      </div>
+      <div style="${S.termShort}">${t.short}</div>
+      ${detailHtml}
+    </div>`;
+  }).join('');
+
+  sec.innerHTML = `
+    <div style="${S.eyebrow}">Photo editing vocabulary</div>
+    <div style="${S.title}">Click any term to learn more</div>
+    <div style="${S.desc}">Tap a card to expand the full explanation, a real-life comparison, and a thinking question.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">${filterHtml}</div>
+    <div>${cardsHtml}</div>`;
+}
+
+function renderCompare() {
+  document.getElementById('sec-compare').innerHTML = `
+    <div style="${S.eyebrow}">Tool comparison</div>
+    <div style="${S.title}">Lightroom vs Photoshop — what's the difference?</div>
+    <div style="${S.desc}">Both are Adobe apps, but they do very different jobs. Understanding which tool does what is the first step to thinking like a photo editor.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+      <div style="${S.appCard}">
+        <div style="${S.appCardTitle('#3A7BD5')}">Adobe Lightroom</div>
+        <div style="${S.appCardSub}">Think of it as a <em>digital darkroom</em> — a place to organize your photos and improve how they look overall.</div>
+        ${['Adjusts the entire photo at once — like brightness, color, and contrast','Never permanently changes your original photo file','Great for editing lots of photos quickly at the same time','Has a built-in system to organize and sort thousands of photos','Used by photographers, journalists, and content creators'].map(f=>`<div style="${S.featureRow}"><div style="${S.dot('#3A7BD5')}"></div><span>${f}</span></div>`).join('')}
+      </div>
+      <div style="${S.appCard}">
+        <div style="${S.appCardTitle('#9B59B6')}">Adobe Photoshop</div>
+        <div style="${S.appCardSub}">Think of it as a <em>digital canvas</em> — for detailed edits, cutting things out, and combining images.</div>
+        ${['Edit specific parts of a photo, not just the whole thing','Combine two or more photos into one image','Remove objects or people from a scene','Add text, logos, and graphic design elements','Used by graphic designers, advertisers, and digital artists'].map(f=>`<div style="${S.featureRow}"><div style="${S.dot('#9B59B6')}"></div><span>${f}</span></div>`).join('')}
+      </div>
+    </div>
+    <div style="${S.appCard}">
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px;color:#111;">How professionals use both together</div>
+      <div style="font-size:13px;color:#555;line-height:1.6;">Most professionals start in <strong>Lightroom</strong> to fix color and light across all their photos, then bring specific photos into <strong>Photoshop</strong> for detailed work — like removing an object or swapping a background. Think of Lightroom as the first pass and Photoshop as the fine detail work.</div>
+    </div>`;
+}
+
+function renderScenarios() {
+  const cards = SCENARIOS.map(s => `
+    <div style="${S.scenarioCard}">
+      <div style="${S.scenarioTitle}">${s.title}</div>
+      <div style="${S.scenarioBody}">${s.body}</div>
+      <div>${s.tools.map(t=>`<span style="${S.toolPill}">${t}</span>`).join('')}</div>
+    </div>`).join('');
+  document.getElementById('sec-scenarios').innerHTML = `
+    <div style="${S.eyebrow}">Real-world application</div>
+    <div style="${S.title}">What would you actually do?</div>
+    <div style="${S.desc}">Read each situation. Think about which tools and adjustments you'd use — then check the suggestions below each one.</div>
+    ${cards}`;
+}
+
+function renderQuiz() {
+  const area = document.getElementById('sec-quiz');
+  const scoreHtml = `<div style="margin-bottom:16px;"><span style="${S.scorePill}">Score: ${quizScore} / ${Math.min(quizIndex, QUIZ.length)}</span><span style="font-size:13px;color:#888;">Question ${Math.min(quizIndex+1,QUIZ.length)} of ${QUIZ.length}</span></div>`;
+
+  if (quizIndex >= QUIZ.length) {
+    const pct = Math.round(quizScore / QUIZ.length * 100);
+    const msg = pct >= 80 ? "Great work! You have a solid understanding of photo editing vocabulary." : pct >= 60 ? "Good effort! Go back through the Term Explorer to review any terms you missed." : "Keep studying! Click through each card in the Term Explorer and read the comparisons.";
+    area.innerHTML = `
+      <div style="${S.eyebrow}">Knowledge check</div>
+      <div style="${S.title}">Quiz complete!</div>
+      ${scoreHtml}
+      <div style="${S.quizCard}">
+        <div style="${S.quizQ}">You scored ${quizScore} out of ${QUIZ.length} (${pct}%)</div>
+        <p style="font-size:14px;color:#555;line-height:1.6;">${msg}</p>
+        <button style="${S.nextBtn};margin-top:16px;" onclick="restartQuiz()">Try again</button>
+      </div>`;
+    return;
+  }
+
+  const q = QUIZ[quizIndex];
+  const optsHtml = q.opts.map((o,i) =>
+    `<button style="${S.quizOpt('none')}" id="qopt-${i}" onclick="checkAnswer(${i},${q.ans},'${q.explain.replace(/'/g,"\\'")}')">${o}</button>`
+  ).join('');
+
+  area.innerHTML = `
+    <div style="${S.eyebrow}">Knowledge check</div>
+    <div style="${S.title}">Test yourself</div>
+    <div style="${S.desc}">10 questions covering the key ideas. Pick the best answer!</div>
+    ${scoreHtml}
+    <div style="${S.quizCard}">
+      <div style="${S.quizQ}">${q.q}</div>
+      <div id="quiz-opts">${optsHtml}</div>
+      <div id="quiz-fb"></div>
+    </div>`;
+}
+
+function checkAnswer(chosen, correct, explain) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  QUIZ[quizIndex].opts.forEach((_, i) => {
+    const b = document.getElementById(`qopt-${i}`);
+    const state = i === correct ? 'correct' : (i === chosen && chosen !== correct ? 'wrong' : 'none');
+    b.style.cssText = S.quizOpt(state);
+    b.disabled = true;
+  });
+  const ok = chosen === correct;
+  if (ok) quizScore++;
+  document.getElementById('quiz-fb').innerHTML =
+    `<div style="${S.feedback(ok)}">${ok?'Correct! ':'Not quite — '}${explain}</div>
+     <button style="${S.nextBtn}" onclick="nextQuestion()">Next question →</button>`;
+}
+
+function nextQuestion() { quizIndex++; quizAnswered = false; renderQuiz(); }
+function restartQuiz() { quizIndex=0; quizScore=0; quizAnswered=false; renderQuiz(); }
+
+function toggleTerm(name) {
+  expandedTerm = expandedTerm === name ? null : name;
+  renderTerms();
+}
+
+function setFilter(cat) { activeFilter = cat; expandedTerm = null; renderTerms(); }
+
+function switchTab(tab) {
+  activeTab = tab;
+  ['terms','compare','scenarios','quiz'].forEach(id => {
+    document.getElementById('sec-'+id).style.display = id===tab ? 'block' : 'none';
+  });
+  renderNav();
+  if (tab==='terms') renderTerms();
+  if (tab==='compare') renderCompare();
+  if (tab==='scenarios') renderScenarios();
+  if (tab==='quiz') renderQuiz();
+}
+
+// ── INIT ──────────────────────────────────────────────
+renderNav();
+renderTerms();
+</script>
+</body>
+</html>
