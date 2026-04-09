@@ -74,7 +74,7 @@ const S = {
   title: `font-size:22px;font-weight:600;margin-bottom:4px;color:#111;`,
   desc: `font-size:14px;color:#666;line-height:1.6;margin-bottom:20px;`,
   filterBtn: (on) => `padding:4px 13px;border-radius:16px;border:1px solid ${on?'#1a1a1a':'#ccc'};background:${on?'#1a1a1a':'transparent'};font-size:12px;cursor:pointer;color:${on?'#fff':'#666'};font-family:'Segoe UI',Arial,sans-serif;margin-bottom:6px;`,
-  card: (expanded) => `background:#fff;border:1px solid ${expanded?'#999':'#e0e0e0'};border-radius:12px;padding:14px 16px;cursor:pointer;margin-bottom:8px;`,
+  card: (expanded) => `background:#fff;border:1px solid ${expanded?'#999':'#e0e0e0'};border-radius:12px;padding:14px 16px;cursor:pointer;`,
   termHeader: `display:flex;justify-content:space-between;align-items:flex-start;`,
   termName: `font-size:15px;font-weight:600;color:#111;flex:1;`,
   appBadge: (app) => {
@@ -165,7 +165,7 @@ function renderTerms() {
     <div style="${S.title}">Click any term to learn more</div>
     <div style="${S.desc}">Tap a card to expand the full explanation, a real-life comparison, and a thinking question.</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">${filterHtml}</div>
-    <div>${cardsHtml}</div>`;
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">${cardsHtml}</div>`;
 }
 
 function renderCompare() {
